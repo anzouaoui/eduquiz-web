@@ -8,25 +8,33 @@ const publicRoutes = ['/auth/signin', '/auth/register'];
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   
-  // Check if the route is an admin route
-  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
-  
+  // Redirect /privacy to /confidentialite with 301 (permanent) status
+  if (pathname === '/privacy') {
+    return NextResponse.redirect(
+      new URL('/confidentialite', request.url),
+      { status: 301 }
+    );
+  }
+
   // Skip middleware for public routes
   if (publicRoutes.some(route => pathname.startsWith(route))) {
     return NextResponse.next();
   }
 
-  const token = await getToken({ req: request });
+  // Check if the route is an admin route
+  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   
   // If it's an admin route, check for admin role
   if (isAdminRoute) {
+    const token = await getToken({ req: request });
+    
+    // If there's no token, redirect to login
     if (!token) {
-      // Redirect to login if not authenticated
       const url = new URL('/auth/signin', request.url);
       url.searchParams.set('callbackUrl', encodeURI(pathname));
       return NextResponse.redirect(url);
     }
-    
+
     // Check if user has admin role (you'll need to adjust this based on your user model)
     if (token.role !== 'admin') {
       // Redirect to home or unauthorized page
