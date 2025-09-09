@@ -1,0 +1,63 @@
+/* Print styles for the privacy policy page */
+@media print {
+  /* Hide elements that shouldn't appear in print */
+  header,
+  footer,
+  .print-button {
+    display: none !important;
+  }
+
+  /* Ensure proper page breaks */
+  body {
+    font-size: 12pt;
+    line-height: 1.5;
+    color: #000;
+    background: #fff;
+  }
+
+  /* Improve link appearance in print */
+  a {
+    color: #000;
+    text-decoration: underline;
+  }
+
+  /* Add URL after links */
+  a[href^='http']:after {
+    content: ' (' attr(href) ')';
+    font-size: 0.8em;
+    font-weight: normal;
+  }
+
+  /* Page margins */
+  @page {
+    margin: 2cm;
+  }
+
+  /* Ensure proper spacing */
+  section {
+    page-break-inside: avoid;
+    margin-bottom: 1.5em;
+  }
+
+  /* Style headings */
+  h1, h2, h3 {
+    page-break-after: avoid;
+    break-after: avoid;
+  }
+
+  /* Prevent widows and orphans */
+  p, li {
+    page-break-inside: avoid;
+    widows: 3;
+    orphans: 3;
+  }
+
+  /* Table of contents styling */
+  .toc {
+    page-break-after: always;
+  }
+
+  .toc a::after {
+    content: leader('.') target-counter(attr(href), page);
+  }
+}
