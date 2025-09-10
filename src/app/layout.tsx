@@ -1,7 +1,7 @@
-import type { Metadata,Viewport } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist } from "next/font/google";
 import "./globals.css";
-import { Layout } from "@/components/layout/Layout";
+import Providers from "./providers";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -16,8 +16,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0b0b0b" },
+    { media: "(prefers-color-scheme: light)", color: "#FFFFFF" },
+    { media: "(prefers-color-scheme: dark)", color: "#0A0A0B" },
   ],
 };
 
@@ -32,9 +32,9 @@ export default function RootLayout({
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
       <body className={`${geist.variable} font-sans antialiased`}>
-        <Layout>
+        <Providers>
           {children}
-        </Layout>
+        </Providers>
       </body>
     </html>
   );

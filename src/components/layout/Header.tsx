@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -38,7 +39,14 @@ export function Header() {
           </nav>
         </div>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <Link 
+            href="/pricing" 
+            className="bg-brand-gradient btn-gradient px-4 py-2 text-sm font-medium"
+          >
+            Commencer gratuitement
+          </Link>
           {isAuthenticated ? (
             <div className="flex items-center gap-4">
               <button
