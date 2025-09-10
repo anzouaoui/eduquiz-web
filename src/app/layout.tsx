@@ -4,6 +4,8 @@ import "./globals.css";
 import Providers from "./providers";
 import { ThemeProvider } from "next-themes";
 
+type Theme = 'light' | 'dark';
+
 // Configure Inter for body text
 const inter = Inter({
   subsets: ["latin"],
@@ -41,12 +43,14 @@ export default function RootLayout({
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className={`${inter.variable} ${sora.variable} font-sans antialiased min-h-screen`}>
-        <Providers>
-          <main className="min-h-screen flex flex-col">
-            {children}
-          </main>
-        </Providers>
+      <body className={`${inter.variable} ${sora.variable} font-sans antialiased min-h-screen bg-background text-foreground`}>
+        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+          <Providers>
+            <main className="min-h-screen flex flex-col">
+              {children}
+            </main>
+          </Providers>
+        </ThemeProvider>
       </body>
     </html>
   );

@@ -4,7 +4,8 @@ import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import { ThemeToggle } from "@/components/theme/theme-toggle";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
+import { Button } from "@/components/ui/button";
 
 const NAV_LINKS = [
   { name: "Home", href: "/" },
@@ -28,103 +29,87 @@ export function Header() {
   return (
     <header 
       className={cn(
-        "sticky top-0 z-50 w-full transition-all duration-300",
-        isScrolled ? "bg-background/80 backdrop-blur-md border-b" : "bg-background/50"
+        "sticky top-0 z-50 w-full transition-all duration-300 border-b border-transparent",
+        isScrolled ? "bg-background/80 backdrop-blur-md border-border/10" : "bg-background/50"
       )}
     >
-      <div className="container flex h-16 items-center justify-between">
-        {/* Brand */}
-        <Link 
-          href="/" 
-          className="text-xl font-semibold tracking-tight text-foreground"
-        >
-          EduQuiz
-        </Link>
+      <div className="container flex h-16 items-center justify-between px-4">
+        <div className="flex items-center gap-8">
+          {/* Brand */}
+          <Link 
+            href="/" 
+            className="text-xl font-semibold tracking-tight text-foreground hover:opacity-80 transition-opacity"
+          >
+            EduQuiz
+          </Link>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          {NAV_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className={cn(
-                "relative text-sm font-medium text-foreground/70 hover:text-foreground",
-                "after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0",
-                "after:bg-foreground after:transition-all after:duration-300",
-                "hover:after:w-full"
-              )}
-            >
-              {link.name}
-            </Link>
-          ))}
-        </nav>
+          {/* Desktop Navigation */}
+          <nav className="hidden md:flex items-center space-x-6">
+            {NAV_LINKS.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </nav>
+        </div>
 
         <div className="flex items-center gap-4">
-          <Link 
-            href="/login" 
-            className="hidden text-sm font-medium text-foreground/70 hover:text-foreground transition-colors md:block"
-          >
-            Sign in
-          </Link>
-          <Link 
-            href="/signup" 
-            className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:opacity-90 h-10 px-4 py-2"
-          >
-            Get Started
-          </Link>
-
-          {/* Mobile menu button */}
-          <button
-            type="button"
-            className="inline-flex items-center justify-center p-2 rounded-md text-foreground/70 hover:text-foreground focus:outline-none md:hidden"
-            aria-expanded={isMenuOpen}
-            aria-controls="mobile-menu"
+          <div className="hidden md:flex items-center gap-4">
+            <Link 
+              href="/login" 
+              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
+            >
+              Sign in
+            </Link>
+            <Button asChild variant="default" size="sm">
+              <Link href="/signup">
+                Get Started
+              </Link>
+            </Button>
+          </div>
+          <ThemeToggle />
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="md:hidden" 
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
-            <span className="sr-only">Open main menu</span>
-            {isMenuOpen ? (
-              <X className="h-6 w-6" aria-hidden="true" />
-            ) : (
-              <Menu className="h-6 w-6" aria-hidden="true" />
-            )}
-          </button>
+            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </Button>
         </div>
       </div>
 
       {/* Mobile menu */}
-      <div 
-        id="mobile-menu"
+      <div
         className={cn(
-          "md:hidden transition-all duration-300 ease-in-out overflow-hidden",
-          isMenuOpen ? "max-h-64 py-2" : "max-h-0"
+          'md:hidden absolute inset-x-0 top-16 z-50 w-full origin-top scale-100 transform bg-background/95 p-4 opacity-100 transition-all duration-200 ease-in-out border-t border-border/10',
+          !isMenuOpen && 'invisible scale-95 opacity-0',
         )}
-        aria-hidden={!isMenuOpen}
+        id="mobile-menu"
       >
-        <div className="glass rounded-lg mx-4 p-4 space-y-3">
-          {NAV_LINKS.map((link) => (
+        <div className="space-y-4 px-2 pb-3 pt-2">
+          {NAV_LINKS.map((item) => (
             <Link
-              key={link.href}
-              href={link.href}
-              className="block px-3 py-2 text-base font-medium text-foreground/90 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+              key={item.href}
+              href={item.href}
+              className="block rounded-md px-3 py-2 text-base font-medium text-foreground/80 hover:bg-muted/50"
               onClick={() => setIsMenuOpen(false)}
             >
-              {link.name}
+              {item.name}
             </Link>
           ))}
-          <div className="pt-2 border-t border-border/50 mt-2">
+          <div className="pt-4 border-t border-border/20">
             <Link
               href="/login"
-              className="block w-full text-center px-3 py-2 text-base font-medium text-foreground/90 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+              className="block w-full rounded-md bg-muted/50 px-3 py-2 text-center text-base font-medium text-foreground hover:bg-muted/80"
               onClick={() => setIsMenuOpen(false)}
             >
               Sign in
-            </Link>
-            <Link
-              href="/signup"
-              className="mt-2 block w-full text-center bg-gradient-to-r from-primary to-secondary text-primary-foreground font-medium py-2 px-4 rounded-md hover:opacity-90 transition-opacity"
-              onClick={() => setIsMenuOpen(false)}
-            >
-              Get Started
             </Link>
           </div>
         </div>

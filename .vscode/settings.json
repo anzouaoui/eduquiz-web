@@ -1,0 +1,12 @@
+{
+  "css.customData": [".vscode/css_custom_data.json"],
+  "files.associations": {
+    "*.css": "postcss"
+  },
+  "tailwindCSS.includeLanguages": {
+    "plaintext": "html"
+  },
+  "editor.quickSuggestions": {
+    "strings": true
+  }
+}
