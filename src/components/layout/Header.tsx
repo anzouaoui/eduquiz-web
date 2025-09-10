@@ -2,106 +2,135 @@
 
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
+const NAV_LINKS = [
+  { name: "Home", href: "/" },
+  { name: "Rooms", href: "/rooms" },
+  { name: "Pricing", href: "/pricing" },
+  { name: "Privacy", href: "/privacy" },
+];
+
 export function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const isAuthenticated = false; // TODO: brancher l'état auth réel
-  const userInitial = "U";
+  const [isScrolled, setIsScrolled] = useState(false);
 
-  const navLinks = [
-    { name: "Accueil", href: "/" },
-    { name: "Rooms", href: "/rooms" },
-    { name: "Profil", href: "/profile" },
-  ];
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 10);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <header 
+      className={cn(
+        "sticky top-0 z-50 w-full transition-all duration-300",
+        isScrolled ? "bg-background/80 backdrop-blur-md border-b" : "bg-background/50"
+      )}
+    >
       <div className="container flex h-16 items-center justify-between">
-        <div className="flex items-center gap-6 md:gap-10">
-          <Link href="/" className="flex items-center space-x-2">
-            <span className="text-xl font-bold">EduQuiz</span>
-          </Link>
+        {/* Brand */}
+        <Link 
+          href="/" 
+          className="text-xl font-semibold tracking-tight text-foreground"
+        >
+          EduQuiz
+        </Link>
 
-          {/* Nav desktop */}
-          <nav className="hidden items-center space-x-6 text-sm font-medium md:flex">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="transition-colors hover:text-foreground/80 text-foreground/60"
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <ThemeToggle />
-          <Link 
-            href="/pricing" 
-            className="bg-brand-gradient btn-gradient px-4 py-2 text-sm font-medium"
-          >
-            Commencer gratuitement
-          </Link>
-          {isAuthenticated ? (
-            <div className="flex items-center gap-4">
-              <button
-                type="button"
-                aria-label="Ouvrir le menu utilisateur"
-                className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground"
-              >
-                {userInitial}
-              </button>
-            </div>
-          ) : (
+        {/* Desktop Navigation */}
+        <nav className="hidden md:flex items-center space-x-8">
+          {NAV_LINKS.map((link) => (
             <Link
-              href="/auth/login"
-              className="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              key={link.href}
+              href={link.href}
+              className={cn(
+                "relative text-sm font-medium text-foreground/70 hover:text-foreground",
+                "after:absolute after:bottom-0 after:left-0 after:h-0.5 after:w-0",
+                "after:bg-foreground after:transition-all after:duration-300",
+                "hover:after:w-full"
+              )}
             >
-              Se connecter
+              {link.name}
             </Link>
-          )}
+          ))}
+        </nav>
 
-          {/* Burger mobile */}
+        <div className="flex items-center gap-4">
+          <Link 
+            href="/login" 
+            className="hidden text-sm font-medium text-foreground/70 hover:text-foreground transition-colors md:block"
+          >
+            Sign in
+          </Link>
+          <Link 
+            href="/signup" 
+            className="hidden md:inline-flex items-center justify-center rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:opacity-50 disabled:pointer-events-none ring-offset-background bg-gradient-to-r from-primary to-secondary text-primary-foreground hover:opacity-90 h-10 px-4 py-2"
+          >
+            Get Started
+          </Link>
+
+          {/* Mobile menu button */}
           <button
             type="button"
-            className="flex h-10 w-10 items-center justify-center rounded-md md:hidden"
-            onClick={() => setIsMenuOpen((v) => !v)}
-            aria-label={isMenuOpen ? "Fermer le menu" : "Ouvrir le menu"}
+            className="inline-flex items-center justify-center p-2 rounded-md text-foreground/70 hover:text-foreground focus:outline-none md:hidden"
             aria-expanded={isMenuOpen}
-            aria-controls="mobile-nav"
+            aria-controls="mobile-menu"
+            onClick={() => setIsMenuOpen(!isMenuOpen)}
           >
-            {isMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            <span className="sr-only">Toggle menu</span>
+            <span className="sr-only">Open main menu</span>
+            {isMenuOpen ? (
+              <X className="h-6 w-6" aria-hidden="true" />
+            ) : (
+              <Menu className="h-6 w-6" aria-hidden="true" />
+            )}
           </button>
         </div>
       </div>
 
-      {/* Nav mobile */}
-      <div
-        id="mobile-nav"
-        className={cn("md:hidden", isMenuOpen ? "absolute top-16 z-50 w-full border-t bg-background" : "hidden")}
+      {/* Mobile menu */}
+      <div 
+        id="mobile-menu"
+        className={cn(
+          "md:hidden transition-all duration-300 ease-in-out overflow-hidden",
+          isMenuOpen ? "max-h-64 py-2" : "max-h-0"
+        )}
+        aria-hidden={!isMenuOpen}
       >
-        <div className="container py-4">
-          <nav className="flex flex-col space-y-4">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                className="block py-2 text-sm font-medium transition-colors hover:text-foreground/80"
-                onClick={() => setIsMenuOpen(false)}
-              >
-                {link.name}
-              </Link>
-            ))}
-          </nav>
+        <div className="glass rounded-lg mx-4 p-4 space-y-3">
+          {NAV_LINKS.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="block px-3 py-2 text-base font-medium text-foreground/90 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              {link.name}
+            </Link>
+          ))}
+          <div className="pt-2 border-t border-border/50 mt-2">
+            <Link
+              href="/login"
+              className="block w-full text-center px-3 py-2 text-base font-medium text-foreground/90 hover:text-foreground hover:bg-foreground/5 rounded-md transition-colors"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Sign in
+            </Link>
+            <Link
+              href="/signup"
+              className="mt-2 block w-full text-center bg-gradient-to-r from-primary to-secondary text-primary-foreground font-medium py-2 px-4 rounded-md hover:opacity-90 transition-opacity"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Get Started
+            </Link>
+          </div>
         </div>
       </div>
     </header>
   );
 }
+
 export default Header;
