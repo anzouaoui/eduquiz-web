@@ -6,6 +6,7 @@ import { QuizTopBar } from '@/components/quiz/QuizTopBar';
 import { QuestionCard } from '@/components/quiz/QuestionCard';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/components/ui/use-toast';
+import { QuizLoading } from '@/components/quiz/QuizLoading';
 
 type Question = {
   id: string;
