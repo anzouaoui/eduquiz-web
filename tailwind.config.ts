@@ -2,8 +2,11 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
-  darkMode: "class", // ✅ au lieu de ["class"]
-  content: ["./src/app/**/*.{ts,tsx,mdx}", "./src/components/**/*.{ts,tsx}"],
+  darkMode: "class",
+  content: [
+    "./src/app/**/*.{ts,tsx,mdx}",
+    "./src/components/**/*.{ts,tsx}",
+  ],
   theme: {
     extend: {
       colors: {
@@ -51,11 +54,18 @@ const config: Config = {
           "linear-gradient(90deg, rgb(var(--grad-danger-from)) 0%, rgb(var(--grad-danger-to)) 100%)",
       },
       borderRadius: {
+        xs: "0.125rem",
+        sm: "0.25rem",
+        md: "0.375rem",
+        lg: "0.5rem",
         xl: "1rem",
         "2xl": "1.25rem",
+        "3xl": "1.5rem",
       },
       boxShadow: {
-        card: "0 8px 30px rgba(0,0,0,0.06)",
+        card: "0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1)",
+        "card-hover": "0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)",
+        soft: "0 2px 10px 0 rgb(0 0 0 / 0.03)",
       },
     },
   },
