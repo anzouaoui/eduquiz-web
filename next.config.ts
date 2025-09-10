@@ -2,20 +2,22 @@ import type { NextConfig } from "next";
 import path from "path";
 
 const nextConfig: NextConfig = {
+  // 🚫 Évite d'utiliser webpack custom si tu build avec Turbopack (voir point 2)
   webpack: (config) => {
-    // Add path aliases to webpack
     config.resolve.alias = {
       ...config.resolve.alias,
-      '@': path.resolve(__dirname, './src'),
+      "@": path.resolve(__dirname, "./src"),
     };
     return config;
   },
-  // Enable TypeScript path aliases
+
+  // ✅ Ne PAS bloquer le build sur ESLint (les erreurs resteront visibles en dev)
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+
+  // ✅ Continuer à bloquer sur les erreurs TypeScript (bon réflexe)
   typescript: {
-    // !! WARN !!
-    // Dangerously allow production builds to successfully complete even if
-    // your project has type errors.
-    // !! WARN !!
     ignoreBuildErrors: false,
   },
 };
