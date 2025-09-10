@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 export async function signUpWithEmail(formData: FormData) {
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signUp({
     email,
     password,
@@ -23,7 +23,7 @@ export async function signUpWithEmail(formData: FormData) {
 export async function signInWithEmail(formData: FormData) {
   const email = String(formData.get("email") || "");
   const password = String(formData.get("password") || "");
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.signInWithPassword({ email, password });
   if (error) return { error: error.message };
   revalidatePath("/");
@@ -31,7 +31,7 @@ export async function signInWithEmail(formData: FormData) {
 }
 
 export async function signInWithOAuth(provider: "google" | "apple") {
-  const supabase = createClient();
+  const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
@@ -45,7 +45,7 @@ export async function signInWithOAuth(provider: "google" | "apple") {
 
 export async function sendResetPassword(formData: FormData) {
   const email = String(formData.get("email") || "");
-  const supabase = createClient();
+  const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/auth/callback`,
   });
@@ -54,7 +54,7 @@ export async function sendResetPassword(formData: FormData) {
 }
 
 export async function signOutAction() {
-  const supabase = createClient();
+  const supabase = await createClient();
   await supabase.auth.signOut();
   revalidatePath("/");
   redirect("/");
