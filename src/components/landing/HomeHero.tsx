@@ -1,6 +1,30 @@
 import Link from "next/link";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { Container } from "@/components/layout/Container";
+
+const container = {
+  hidden: { opacity: 0 },
+  show: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.1,
+      delayChildren: 0.2,
+    },
+  },
+};
+
+const item = {
+  hidden: { opacity: 0, y: 20 },
+  show: { 
+    opacity: 1, 
+    y: 0,
+    transition: {
+      duration: 0.4,
+      ease: "easeOut"
+    }
+  },
+};
 
 export function HomeHero() {
   return (
@@ -13,35 +37,64 @@ export function HomeHero() {
       </div>
 
       <Container className="relative z-10">
-        <div className="mx-auto max-w-4xl text-center">
-          <h1 className="text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl">
-            <span className="bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent">
+        <motion.div 
+          className="mx-auto max-w-4xl text-center"
+          variants={container}
+          initial="hidden"
+          animate="show"
+        >
+          <motion.h1 className="text-4xl font-bold tracking-tight sm:text-6xl md:text-7xl">
+            <motion.span 
+              className="block bg-gradient-to-r from-primary to-secondary bg-clip-text text-transparent"
+              variants={item}
+            >
               Transform Learning
-            </span>
-            <br />
-            <span className="bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent">
+            </motion.span>
+            <motion.span 
+              className="block bg-gradient-to-r from-secondary to-accent bg-clip-text text-transparent"
+              variants={item}
+            >
               With Interactive Quizzes
-            </span>
-          </h1>
+            </motion.span>
+          </motion.h1>
           
-          <p className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground">
+          <motion.p 
+            className="mx-auto mt-6 max-w-2xl text-lg text-muted-foreground"
+            variants={item}
+          >
             Create, share, and track engaging quizzes that make learning fun and effective. Perfect for educators, students, and knowledge enthusiasts.
-          </p>
+          </motion.p>
           
-          <div className="mt-10 flex flex-wrap items-center justify-center gap-4">
-            <Button asChild size="lg" className="bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90">
-              <Link href="/signup">
-                Start Now
-              </Link>
-            </Button>
-            <Button asChild variant="outline" size="lg">
-              <Link href="/rooms">
-                Browse Rooms
-                <span className="sr-only">Browse public quiz rooms</span>
-              </Link>
-            </Button>
-          </div>
-        </div>
+          <motion.div 
+            className="mt-10 flex flex-wrap items-center justify-center gap-4"
+            variants={{
+              hidden: { opacity: 0 },
+              show: {
+                opacity: 1,
+                transition: {
+                  staggerChildren: 0.1,
+                  delayChildren: 0.3,
+                },
+              },
+            }}
+          >
+            <motion.div variants={item}>
+              <Button asChild size="lg" className="bg-gradient-to-r from-primary to-secondary text-white hover:opacity-90">
+                <Link href="/signup">
+                  Start Now
+                </Link>
+              </Button>
+            </motion.div>
+            <motion.div variants={item}>
+              <Button asChild variant="outline" size="lg">
+                <Link href="/rooms">
+                  Browse Rooms
+                  <span className="sr-only">Browse public quiz rooms</span>
+                </Link>
+              </Button>
+            </motion.div>
+          </motion.div>
+        </motion.div>
       </Container>
     </section>
   );
