@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply border-border;
+  *, *::before, *::after {
+    border-color: rgb(var(--border));
   }
   
   html, body, :root {
