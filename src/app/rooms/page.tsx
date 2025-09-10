@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { PageBackground } from '@/components/ui/PageBackground';
 import Link from 'next/link';
 import { Search } from 'lucide-react';
 
@@ -43,8 +44,9 @@ export default function RoomsPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      <div className="max-w-4xl mx-auto">
+    <PageBackground variant="primary" className="py-12">
+      <div className="container mx-auto px-4">
+        <div className="max-w-4xl mx-auto">
         <div className="flex flex-col md:flex-row gap-4 mb-8">
           <div className="flex-1 relative">
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
@@ -106,5 +108,6 @@ export default function RoomsPage() {
         )}
       </div>
     </div>
+    </PageBackground>
   );
 }
