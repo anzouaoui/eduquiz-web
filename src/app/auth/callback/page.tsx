@@ -1,168 +1,182 @@
 "use client";
 
-import { Suspense, useEffect, useState, type FormEvent } from "react";
+import { useEffect, useState } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
+import { supabaseBrowser } from "@/lib/supabase/client";
 import { Loader2 } from "lucide-react";
 
-function CallbackInner() {
-  const searchParams = useSearchParams();
+export default function AuthCallbackPage() {
+  const search = useSearchParams();
   const router = useRouter();
-
-  const [isLoading, setIsLoading] = useState(true);
-  const [isResetPassword, setIsResetPassword] = useState(false);
-  const [newPassword, setNewPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
+  const [status, setStatus] = useState<"loading"|"password"|"done"|"error">("loading");
   const [error, setError] = useState("");
-  const [isSuccess, setIsSuccess] = useState(false);
+  const [password, setPassword] = useState("");
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  // Check if this is a password reset flow
   useEffect(() => {
-    const mode = searchParams.get("mode");
-    const oobCode = searchParams.get("oobCode");
-
-    if (mode === "resetPassword" && oobCode) {
-      setIsResetPassword(true);
-      setIsLoading(false);
-    } else {
-      // OAuth callback (ex: après Google/Apple)
-      const timer = setTimeout(() => {
-        router.push("/");
-      }, 2000);
-      return () => clearTimeout(timer);
+    const code = search.get("code");
+    const next = search.get("next") || "/";
+    
+    if (!code) {
+      setError("Missing authentication code");
+      setStatus("error");
+      return;
     }
-  }, [searchParams, router]);
 
-  const handleResetPassword = async (e: FormEvent) => {
+    const handleAuth = async () => {
+      try {
+        const supabase = supabaseBrowser();
+        const { data, error: authError } = await supabase.auth.exchangeCodeForSession(code);
+        
+        if (authError) { 
+          throw new Error(authError.message);
+        }
+
+        // Check if this is a password recovery flow
+        const type = search.get("type");
+        if (type === "recovery" || 
+            (data?.user?.app_metadata?.provider === "email" && 
+             data?.user?.email_confirmed_at)) {
+          setStatus("password");
+          return;
+        }
+
+        // Regular auth flow - redirect to home
+        router.replace(next);
+        setStatus("done");
+      } catch (err) {
+        console.error("Authentication error:", err);
+        setError(err instanceof Error ? err.message : "An unknown error occurred");
+        setStatus("error");
+      }
+    };
+
+    handleAuth();
+  }, [search, router]);
+
+  const handlePasswordReset = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (newPassword !== confirmPassword) {
-      setError("Les mots de passe ne correspondent pas");
+    if (!password) {
+      setError("Please enter a new password");
       return;
     }
-    if (newPassword.length < 6) {
-      setError("Le mot de passe doit contenir au moins 6 caractères");
-      return;
-    }
-
+    
+    setIsUpdating(true);
     try {
-      const oobCode = searchParams.get("oobCode");
-      console.log("Resetting password with code:", oobCode);
-
-      // Simule un appel API
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      setIsSuccess(true);
-      setTimeout(() => router.push("/"), 2000);
+      const supabase = supabaseBrowser();
+      const { error } = await supabase.auth.updateUser({
+        password: password
+      });
+      
+      if (error) throw error;
+      
+      // Password updated successfully
+      router.push("/auth/login?message=Password updated successfully");
     } catch (err) {
-      console.error("Password reset error:", err);
-      setError("Une erreur est survenue. Veuillez réessayer.");
+      console.error("Password update error:", err);
+      setError(err instanceof Error ? err.message : "Failed to update password");
+    } finally {
+      setIsUpdating(false);
     }
   };
 
-  if (isLoading) {
+  // Loading state
+  if (status === "loading") {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <div className="flex flex-col items-center space-y-4">
-          <Loader2 className="h-12 w-12 animate-spin text-primary" />
-          <p className="text-muted-foreground">Connexion en cours...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="flex items-center gap-3 text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <span>Authenticating...</span>
         </div>
       </div>
     );
   }
 
-  if (isResetPassword) {
-    if (isSuccess) {
-      return (
-        <div className="flex min-h-screen items-center justify-center">
-          <Card className="w-full max-w-md">
-            <CardHeader>
-              <CardTitle>Mot de passe mis à jour</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p>Votre mot de passe a été réinitialisé avec succès.</p>
-              <p>Redirection en cours...</p>
-            </CardContent>
-          </Card>
-        </div>
-      );
-    }
-
+  // Password reset form
+  if (status === "password") {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Nouveau mot de passe</CardTitle>
-            <p className="text-sm text-muted-foreground">
-              Entrez et confirmez votre nouveau mot de passe.
-            </p>
-          </CardHeader>
-
-          <form onSubmit={handleResetPassword}>
-            <CardContent className="space-y-4">
-              {error && (
-                <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">{error}</div>
-              )}
-
-              <div className="space-y-2">
-                <label htmlFor="password" className="text-sm font-medium">
-                  Nouveau mot de passe
-                </label>
-                <Input
-                  id="password"
-                  type="password"
-                  value={newPassword}
-                  onChange={(e) => setNewPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-
-              <div className="space-y-2">
-                <label htmlFor="confirmPassword" className="text-sm font-medium">
-                  Confirmer le mot de passe
-                </label>
-                <Input
-                  id="confirmPassword"
-                  type="password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  required
-                  minLength={6}
-                />
-              </div>
-            </CardContent>
-
-            <CardFooter>
-              <Button type="submit" className="w-full">
-                Réinitialiser le mot de passe
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
-      </div>
-    );
-  }
-
-  return null;
-}
-
-export default function AuthCallbackPage() {
-  return (
-    <Suspense
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="flex flex-col items-center space-y-4">
-            <Loader2 className="h-12 w-12 animate-spin text-primary" />
-            <p className="text-muted-foreground">Chargement…</p>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold">Set New Password</h1>
+            <p className="mt-2 text-gray-600">Please enter your new password below.</p>
           </div>
+          
+          {error && (
+            <div className="p-3 text-sm text-red-700 bg-red-100 rounded-md">
+              {error}
+            </div>
+          )}
+          
+          <form onSubmit={handlePasswordReset} className="space-y-4">
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+                New Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                placeholder="Enter your new password"
+              />
+            </div>
+            
+            <button
+              type="submit"
+              disabled={isUpdating}
+              className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {isUpdating ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Updating...
+                </>
+              ) : 'Update Password'}
+            </button>
+          </form>
         </div>
-      }
-    >
-      <CallbackInner />
-    </Suspense>
-  );
+      </div>
+    );
+  }
+
+  // Error state
+  if (status === "error") {
+    return (
+      <div className="min-h-screen grid place-items-center p-4">
+        <div className="w-full max-w-md p-6 space-y-4 text-center bg-white rounded-lg shadow">
+          <div className="text-red-500">
+            <svg
+              className="w-12 h-12 mx-auto"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+              />
+            </svg>
+          </div>
+          <h2 className="text-xl font-semibold text-gray-900">Authentication Error</h2>
+          <p className="text-gray-600">{error}</p>
+          <button
+            onClick={() => window.location.href = "/auth/login"}
+            className="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+          >
+            Return to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Default return (should not be reached in normal flow)
+  return null;
 }
