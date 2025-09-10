@@ -56,9 +56,12 @@ export default function CreateRoomPage() {
             <CardTitle className="flex items-center gap-2">
               Créer une nouvelle salle
               {isPremium && (
-                <Badge variant="premium" className="uppercase text-xs">
-                  Premium
-                </Badge>
+                <Badge
+                variant="secondary"
+                className="uppercase text-xs bg-amber-400 text-black border-amber-500 dark:bg-amber-300"
+              >
+                Premium
+              </Badge>
               )}
             </CardTitle>
           </CardHeader>
