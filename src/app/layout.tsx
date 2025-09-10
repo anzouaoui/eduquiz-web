@@ -1,12 +1,21 @@
 import type { Metadata, Viewport } from "next";
-import { Geist } from "next/font/google";
+import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import { ThemeProvider } from "next-themes";
 
-const geist = Geist({
+// Configure Inter for body text
+const inter = Inter({
   subsets: ["latin"],
   variable: "--font-sans",
+  display: "swap",
+});
+
+// Configure Sora for headings
+const sora = Sora({
+  subsets: ["latin"],
+  variable: "--font-heading",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -28,13 +37,15 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="fr" suppressHydrationWarning>
+    <html lang="fr" className="scroll-smooth" suppressHydrationWarning>
       <head>
         <link rel="icon" href="/favicon.ico" sizes="any" />
       </head>
-      <body className={`${geist.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${sora.variable} font-sans antialiased min-h-screen`}>
         <Providers>
-          {children}
+          <main className="min-h-screen flex flex-col">
+            {children}
+          </main>
         </Providers>
       </body>
     </html>
