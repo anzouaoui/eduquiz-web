@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { HomeHero } from '@/components/landing/HomeHero';
 import { ProgressKPIs } from '@/components/progression/ProgressKPIs';
 import { ProgressionGrid } from '@/components/progression/ProgressionGrid';
 import { Button } from '@/components/ui/button';
@@ -55,49 +56,42 @@ const useUserProgress = (): { data: { levels: LevelProgress[]; completionPercent
 
 export default function Home() {
   const router = useRouter();
-  const { data: progress, isLoading } = useUserProgress();
-  
-  const handleThemeClick = (levelId: string, themeId: string) => {
-    console.log(`Level ${levelId}, Theme ${themeId} clicked`);
-    // Navigate to quiz or show modal
-  };
-  
-  const handlePlayClick = () => {
-    router.push('/select');
-  };
+  const { data: progressData, isLoading } = useUserProgress();
+
+  if (isLoading || !progressData) {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="h-12 w-12 animate-spin rounded-full border-4 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  const { levels, completionPercentage, totalTimeSpent } = progressData;
 
   return (
-    <div className="container py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-4">Votre progression</h1>
-        <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-          Suivez votre avancement et continuez à apprendre
-        </p>
-        
-        <Button 
-          size="lg" 
-          className="text-lg px-8 py-6"
-          onClick={handlePlayClick}
-        >
-          Jouer maintenant
-        </Button>
-      </div>
-
-      <ProgressKPIs 
-        completionPercentage={progress?.completionPercentage || 0}
-        totalTimeSpent={progress?.totalTimeSpent || 0}
-        isLoading={isLoading}
-        className="mt-8"
-      />
+    <>
+      <HomeHero />
       
-      <div className="mt-8">
-        <h2 className="text-2xl font-semibold mb-6">Niveaux et thèmes</h2>
-        <ProgressionGrid 
-          levels={progress?.levels || []} 
-          isLoading={isLoading}
-          onThemeClick={handleThemeClick}
+      <main className="container mx-auto px-4 py-8">
+        <div className="mb-8 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight">Ma Progression</h1>
+            <p className="text-muted-foreground">
+              Suivez votre avancement dans les différents thèmes
+            </p>
+          </div>
+          <Button onClick={() => router.push('/practice')}>
+            Nouvelle séance
+          </Button>
+        </div>
+
+        <ProgressKPIs 
+          completionPercentage={completionPercentage} 
+          totalTimeSpent={totalTimeSpent} 
         />
-      </div>
-    </div>
+        
+        <ProgressionGrid levels={levels} />
+      </main>
+    </>
   );
 }
