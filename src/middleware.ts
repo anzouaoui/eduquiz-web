@@ -1,84 +1,49 @@
-import { NextResponse, type NextRequest } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { createServerClient } from '@supabase/ssr';
+// src/middleware.ts (ou à la racine du projet si tu n'as pas de dossier src)
+import { NextRequest, NextResponse } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 
-const adminRoutes = ['/admin'];
-const publicRoutes = ['/auth/signin', '/auth/register', '/auth/login'];
-const protectedRoutes = ['/profile', '/rooms/create'];
+export async function middleware(req: NextRequest) {
+  // Toujours créer une response avant toute modif de cookies
+  const res = NextResponse.next({ request: { headers: req.headers } });
 
-export async function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
-  const res = NextResponse.next();
-  
-  // Redirect /privacy to /confidentialite with 301 (permanent) status
-  if (pathname === '/privacy') {
-    return NextResponse.redirect(
-      new URL('/confidentialite', request.url),
-      { status: 301 }
-    );
-  }
+  try {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  // Skip middleware for public routes
-  if (publicRoutes.some(route => pathname.startsWith(route))) {
+    // Si les env vars ne sont pas dispo en prod, ne crashe pas le middleware
+    if (!url || !key) {
+      console.warn("[middleware] Missing Supabase env vars; skipping auth refresh.");
+      return res;
+    }
+
+    const supabase = createServerClient(url, key, {
+      cookies: {
+        get: (name: string) => req.cookies.get(name)?.value,
+        set: (name: string, value: string, options: any) => {
+          res.cookies.set(name, value, options);
+          return Promise.resolve();
+        },
+        remove: (name: string, options: any) => {
+          res.cookies.set(name, "", { ...options, expires: new Date(0) });
+          return Promise.resolve();
+        },
+      },
+    });
+
+    // Rafraîchit silencieusement la session si nécessaire
+    await supabase.auth.getSession();
+
+    return res;
+  } catch (e) {
+    // Ne jamais faire planter l'edge middleware (sinon 500)
+    console.error("[middleware] Error:", e);
     return res;
   }
-
-  // Initialize Supabase client
-  const supabase = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    {
-      cookies: {
-        get(name: string) { return request.cookies.get(name)?.value; },
-        set() {},
-        remove() {},
-      },
-    }
-  );
-
-  // Get session from Supabase
-  const { data: { session } } = await supabase.auth.getSession();
-
-  // Check protected routes
-  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-  if (isProtectedRoute && !session) {
-    const url = new URL('/auth/login', request.url);
-    url.searchParams.set('next', pathname);
-    return NextResponse.redirect(url);
-  }
-
-  // Check if the route is an admin route
-  const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
-  
-  // If it's an admin route, check for admin role using NextAuth
-  if (isAdminRoute) {
-    const token = await getToken({ req: request });
-    
-    // If there's no token, redirect to login
-    if (!token) {
-      const url = new URL('/auth/signin', request.url);
-      url.searchParams.set('callbackUrl', encodeURI(pathname));
-      return NextResponse.redirect(url);
-    }
-
-    // Check if user has admin role
-    if (token.role !== 'admin') {
-      return NextResponse.redirect(new URL('/', request.url));
-    }
-  }
-
-  return res;
 }
 
+// Limite le middleware aux pages applicatives (pas les assets statiques)
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except for the ones starting with:
-     * - api (API routes)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };
