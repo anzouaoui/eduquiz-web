@@ -2,6 +2,26 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer utilities {
+  .glass {
+    @apply backdrop-blur-xl bg-white/60 dark:bg-zinc-900/50 border border-white/40 dark:border-white/10;
+  }
+
+  .hover-lift {
+    @apply transition-transform duration-200 hover:-translate-y-0.5;
+  }
+
+  .bg-grid {
+    background-image: linear-gradient(to right, rgb(var(--border)/0.1) 1px, transparent 1px),
+                      linear-gradient(to bottom, rgb(var(--border)/0.1) 1px, transparent 1px);
+    background-size: 1.5rem 1.5rem;
+  }
+
+  .section-y {
+    @apply py-12 md:py-16 lg:py-20;
+  }
+}
+
 @layer base {
   *, *::before, *::after {
     border-color: rgb(var(--border));
