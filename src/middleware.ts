@@ -1,12 +1,14 @@
-import { NextResponse } from 'next/server';
-import type { NextRequest } from 'next/server';
+import { NextResponse, type NextRequest } from 'next/server';
 import { getToken } from 'next-auth/jwt';
+import { createServerClient } from '@supabase/ssr';
 
 const adminRoutes = ['/admin'];
-const publicRoutes = ['/auth/signin', '/auth/register'];
+const publicRoutes = ['/auth/signin', '/auth/register', '/auth/login'];
+const protectedRoutes = ['/profile', '/rooms/create'];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const res = NextResponse.next();
   
   // Redirect /privacy to /confidentialite with 301 (permanent) status
   if (pathname === '/privacy') {
@@ -18,13 +20,37 @@ export async function middleware(request: NextRequest) {
 
   // Skip middleware for public routes
   if (publicRoutes.some(route => pathname.startsWith(route))) {
-    return NextResponse.next();
+    return res;
+  }
+
+  // Initialize Supabase client
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        get(name: string) { return request.cookies.get(name)?.value; },
+        set() {},
+        remove() {},
+      },
+    }
+  );
+
+  // Get session from Supabase
+  const { data: { session } } = await supabase.auth.getSession();
+
+  // Check protected routes
+  const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+  if (isProtectedRoute && !session) {
+    const url = new URL('/auth/login', request.url);
+    url.searchParams.set('next', pathname);
+    return NextResponse.redirect(url);
   }
 
   // Check if the route is an admin route
   const isAdminRoute = adminRoutes.some(route => pathname.startsWith(route));
   
-  // If it's an admin route, check for admin role
+  // If it's an admin route, check for admin role using NextAuth
   if (isAdminRoute) {
     const token = await getToken({ req: request });
     
@@ -35,14 +61,13 @@ export async function middleware(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Check if user has admin role (you'll need to adjust this based on your user model)
+    // Check if user has admin role
     if (token.role !== 'admin') {
-      // Redirect to home or unauthorized page
       return NextResponse.redirect(new URL('/', request.url));
     }
   }
 
-  return NextResponse.next();
+  return res;
 }
 
 export const config = {
