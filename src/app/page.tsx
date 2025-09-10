@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { HomeHero } from '@/components/landing/HomeHero';
+import HomeHero from "@/components/landing/HomeHero";
 import { ProgressKPIs } from '@/components/progression/ProgressKPIs';
 import { ProgressionGrid } from '@/components/progression/ProgressionGrid';
 import { Button } from '@/components/ui/button';
