@@ -32,7 +32,7 @@ export default function RegisterPage() {
   const handleSubmit = async (formData: FormData) => {
     setError('');
     
-    if (!formData.terms) {
+    if (formData.get('terms') !== 'on') {
       setError('Veuillez accepter les conditions d\'utilisation');
       return;
     }
@@ -164,7 +164,15 @@ export default function RegisterPage() {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <form action={() => signInWithOAuth('google')}>
+            <form action={async () => {
+  const result = await signInWithOAuth('google');
+  if (result?.error) {
+    // Handle error if needed
+    console.error(result.error);
+  }
+  router.push('/'); // Redirect to homepage after successful sign-in
+  return; // Explicitly return void
+}}>
                 <Button variant="outline" type="submit" className="w-full">
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                     <path
@@ -187,7 +195,14 @@ export default function RegisterPage() {
                   Google
                 </Button>
               </form>
-              <form action={() => signInWithOAuth('apple')}>
+              <form action={async () => {
+                const result = await signInWithOAuth('apple');
+                if (result?.error) {
+                  // Handle error if needed
+                  console.error(result.error);
+                }
+                return;
+              }}>
                 <Button variant="outline" type="submit" className="w-full">
                   <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
                     <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.13 2.35.93 3 .93.64 0 1.65-.8 2.8-.8 1.05 0 1.85.31 2.5 1.05-2.2 1.2-1.7 4.25.5 5.2-.6 1.45-.69 2.1-.5 3.2.2 1.15 1.05 2.2 2.2 2.2.1 0 .2-.02.3-.02zM12.03 7.25c-.15-2.23 1.66-3.46 2.68-3.46 1.17.01 2.27 1.02 2.39 3.01-2.39.15-3.9-1.12-5.07-.55z" />
