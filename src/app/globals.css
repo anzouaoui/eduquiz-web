@@ -9,14 +9,14 @@
   
   html, body, :root {
     height: 100%;
-    background-color: theme('colors.background');
-    color: theme('colors.foreground');
+    background-color: rgb(var(--background));
+    color: rgb(var(--foreground));
   }
   
   :root {
     /* Base colors */
-    --background: 255, 255, 255;        /* #FFFFFF */
-    --foreground: 31, 41, 55;           /* #1F2937 */
+    --background: 255 255 255;        /* #FFFFFF */
+    --foreground: 31 41 55;           /* #1F2937 */
 
     /* Card */
     --card: 249 250 251;              /* #F9FAFB */
@@ -110,10 +110,6 @@
     border-color: rgb(var(--border));
   }
   
-  body {
-    background-color: rgb(var(--background));
-    color: rgb(var(--foreground));
-  }
 }
 
 @layer utilities {
