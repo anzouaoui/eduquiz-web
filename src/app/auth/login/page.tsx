@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { Loader2, Mail, Lock, ArrowRight, Github, Apple } from 'lucide-react';
 import Link from 'next/link';
+import { signInWithEmail, signInWithOAuth } from './actions';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -28,12 +29,11 @@ export default function LoginPage() {
     if (error) setError('');
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (formData: FormData) => {
     setError('');
     
     // Basic validation
-    if (!formData.email || !formData.password) {
+    if (!formData.get('email') || !formData.get('password')) {
       setError('Veuillez remplir tous les champs');
       return;
     }
@@ -41,24 +41,30 @@ export default function LoginPage() {
     setIsLoading(true);
     
     try {
-      // TODO: Replace with actual authentication logic
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Simulate successful login
-      toast.success('Connexion réussie !');
-      router.push('/dashboard'); // Redirect to dashboard or home page
-      
+      const result = await signInWithEmail(formData);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      // Redirect is handled by the server action
     } catch (err) {
       console.error('Login error:', err);
-      setError('Identifiants incorrects. Veuillez réessayer.');
+      setError(err instanceof Error ? err.message : 'Identifiants incorrects. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleSocialLogin = (provider: 'google' | 'apple') => {
-    // TODO: Implement social login
-    toast.info(`Connexion avec ${provider} bientôt disponible`);
+  const handleSocialLogin = async (provider: 'google' | 'apple') => {
+    try {
+      const result = await signInWithOAuth(provider);
+      if (result?.error) {
+        throw new Error(result.error);
+      }
+      // Redirect is handled by the server action
+    } catch (err) {
+      console.error('Social login error:', err);
+      toast.error('Erreur lors de la connexion avec ' + provider);
+    }
   };
 
   return (
@@ -107,7 +113,7 @@ export default function LoginPage() {
         )}
 
         {/* Login Form */}
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div>
               <Label htmlFor="email" className="block text-sm font-medium text-gray-700">
@@ -123,11 +129,9 @@ export default function LoginPage() {
                   type="email"
                   autoComplete="email"
                   required
-                  className="pl-10"
+                  defaultValue={formData.email}
+                  className="h-11 px-4 py-3 text-base"
                   placeholder="votre@email.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -137,7 +141,7 @@ export default function LoginPage() {
                 <Label htmlFor="password" className="block text-sm font-medium text-gray-700">
                   Mot de passe
                 </Label>
-                <Link href="/auth/forgot-password" className="text-sm text-blue-600 hover:underline">
+                <Link href="/auth/forgot" className="text-sm font-medium text-blue-600 hover:text-blue-500">
                   Mot de passe oublié ?
                 </Link>
               </div>
@@ -151,11 +155,9 @@ export default function LoginPage() {
                   type="password"
                   autoComplete="current-password"
                   required
-                  className="pl-10"
+                  defaultValue={formData.password}
+                  className="h-11 px-4 py-3 text-base"
                   placeholder="••••••••"
-                  value={formData.password}
-                  onChange={handleChange}
-                  disabled={isLoading}
                 />
               </div>
             </div>
@@ -164,18 +166,18 @@ export default function LoginPage() {
           <div>
             <Button 
               type="submit" 
-              className="w-full py-6 text-base font-medium"
+              className="w-full py-6 text-base" 
               disabled={isLoading}
             >
               {isLoading ? (
                 <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   Connexion...
                 </>
               ) : (
                 <>
                   Se connecter
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </>
               )}
             </Button>

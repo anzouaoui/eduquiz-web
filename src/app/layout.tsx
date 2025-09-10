@@ -3,6 +3,7 @@ import { Inter, Sora } from "next/font/google";
 import "./globals.css";
 import Providers from "./providers";
 import { ThemeProvider } from "next-themes";
+import { Navbar } from "@/components/navbar";
 
 type Theme = 'light' | 'dark';
 
@@ -90,9 +91,12 @@ export default function RootLayout({
       <body className={`${inter.variable} ${sora.variable} font-sans antialiased min-h-screen bg-background text-foreground`}>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Providers>
-            <main className="min-h-screen flex flex-col">
-              {children}
-            </main>
+            <div className="flex flex-col min-h-screen">
+              <Navbar />
+              <main className="flex-1">
+                {children}
+              </main>
+            </div>
           </Providers>
         </ThemeProvider>
       </body>

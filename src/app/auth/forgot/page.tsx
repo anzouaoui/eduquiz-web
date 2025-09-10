@@ -6,17 +6,34 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import Link from 'next/link';
+import { sendResetPassword } from '../actions';
+import { toast } from 'sonner';
+import { Loader2 } from 'lucide-react';
 
 export default function ForgotPasswordPage() {
-  const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState(false);
   const [isSubmitted, setIsSubmitted] = useState(false);
+  const [error, setError] = useState('');
   const router = useRouter();
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    // Here you would typically send a password reset email
-    console.log('Password reset requested for:', email);
-    setIsSubmitted(true);
+  const handleSubmit = async (formData: FormData) => {
+    try {
+      setIsLoading(true);
+      setError('');
+      
+      const result = await sendResetPassword(formData);
+      if (result.error) {
+        throw new Error(result.error);
+      }
+      
+      setIsSubmitted(true);
+      toast.success('Email de réinitialisation envoyé avec succès');
+    } catch (err) {
+      console.error('Password reset error:', err);
+      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (isSubmitted) {
@@ -48,7 +65,7 @@ export default function ForgotPasswordPage() {
             Entrez votre adresse email pour recevoir un lien de réinitialisation.
           </CardDescription>
         </CardHeader>
-        <form onSubmit={handleSubmit}>
+        <form action={handleSubmit}>
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium leading-none">
@@ -56,17 +73,25 @@ export default function ForgotPasswordPage() {
               </label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="votre@email.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
                 required
+                className={error ? 'border-red-500' : ''}
               />
+              {error && (
+                <p className="mt-1 text-sm text-red-600">{error}</p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col space-y-4">
-            <Button type="submit" className="w-full">
-              Envoyer le lien
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Envoi en cours...
+                </>
+              ) : 'Envoyer le lien'}
             </Button>
             <div className="text-center text-sm">
               <Link href="/auth/login" className="text-primary hover:underline">
