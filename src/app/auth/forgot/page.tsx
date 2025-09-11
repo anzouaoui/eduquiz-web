@@ -22,15 +22,22 @@ export default function ForgotPasswordPage() {
       setError('');
       
       const result = await sendResetPassword(formData);
+      
+      if (!result) {
+        throw new Error('Aucune réponse du serveur');
+      }
+      
       if (result.error) {
         throw new Error(result.error);
       }
       
       setIsSubmitted(true);
       toast.success('Email de réinitialisation envoyé avec succès');
-    } catch (err) {
+    } catch (err: unknown) {
       console.error('Password reset error:', err);
-      setError(err instanceof Error ? err.message : 'Une erreur est survenue');
+      const errorMessage = err instanceof Error ? err.message : 'Une erreur est survenue';
+      setError(errorMessage);
+      toast.error(errorMessage);
     } finally {
       setIsLoading(false);
     }

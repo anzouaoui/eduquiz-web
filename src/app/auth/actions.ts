@@ -1,39 +1,80 @@
 'use server';
 
 import { cookies } from 'next/headers';
-import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
+import { redirect } from 'next/navigation';
+import { createServerComponentClient } from '@supabase/auth-helpers-nextjs';
 
-export async function signInWithEmail(email: string, password: string) {
-  const supabase = createServerActionClient({ cookies });
-  
-  const { data, error } = await supabase.auth.signInWithPassword({
-    email,
-    password,
-  });
+type OAuthProvider = 'google' | 'apple';
 
-  if (error) {
-    throw error;
-  }
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000';
 
-  return data;
+export async function signInWithEmail(formData: FormData) {
+  const email = String(formData.get('email') ?? '');
+  const password = String(formData.get('password') ?? '');
+  if (!email || !password) return { error: 'Email et mot de passe requis.' };
+
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { error } = await supabase.auth.signInWithPassword({ email, password });
+
+  if (error) return { error: error.message };
+  redirect('/');
 }
 
-export async function signInWithOAuth(provider: 'google' | 'apple') {
-  const supabase = createServerActionClient({ cookies });
+/** Inscription email+mdp */
+export async function signUpWithEmail(formData: FormData) {
+  const email = String(formData.get('email') ?? '');
+  const password = String(formData.get('password') ?? '');
+  const display_name = String(formData.get('display_name') ?? '');
 
-  const origin =
-    process.env.NEXT_PUBLIC_SITE_URL ??
-    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+  if (!email || !password) return { error: 'Email et mot de passe requis.' };
 
-  const { data, error } = await supabase.auth.signInWithOAuth({
-    provider,
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { error } = await supabase.auth.signUp({
+    email,
+    password,
     options: {
-      redirectTo: `${origin}/auth/callback`,
+      data: { display_name },
+      emailRedirectTo: `${SITE_URL}/auth/callback`,
     },
   });
 
-  if (error) throw error;
+  if (error) return { error: error.message };
+  redirect('/');
+}
 
-  // Redirige explicitement si besoin (sinon le SDK le fait aussi)
-  return data?.url;
+/** OAuth déclenchée côté serveur (PKCE OK) */
+export async function signInWithOAuth(provider: OAuthProvider) {
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider,
+    options: { redirectTo: `${SITE_URL}/auth/callback` },
+  });
+  if (error) return { error: error.message };
+  if (data?.url) redirect(data.url);
+  return { error: 'URL de redirection OAuth introuvable.' };
+}
+
+/** Reset password */
+export async function sendResetPassword(formData: FormData) {
+  const email = String(formData.get('email') ?? '');
+  if (!email) return { error: 'Email requis.' };
+
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${SITE_URL}/auth/update-password`,
+  });
+  if (error) return { error: error.message };
+}
+
+/** Déconnexion */
+export async function signOutAction() {
+  const cookieStore = cookies();
+  const supabase = createServerComponentClient({ cookies: () => cookieStore });
+  const { error } = await supabase.auth.signOut();
+  if (error) return { error: error.message };
+  redirect('/auth/login');
 }

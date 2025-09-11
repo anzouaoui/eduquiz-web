@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -14,8 +14,12 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // (facultatif) si tu veux préremplir, garde un state; sinon on peut supprimer complètement ce state.
-  const [formState] = useState({ email: '', password: '' });
+  interface FormState {
+    email: string;
+    password: string;
+  }
+
+  const [formState] = useState<FormState>({ email: '', password: '' });
 
   // ✅ Corrigé: handler typé en événement, puis FormData depuis le formulaire
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -34,7 +38,10 @@ export default function LoginPage() {
     setIsLoading(true);
     try {
       // signInWithEmail will throw an error if authentication fails
-      await signInWithEmail(email, password);
+      const formData = new FormData();
+      formData.append('email', email);
+      formData.append('password', password);
+      await signInWithEmail(formData);
       // If we get here, authentication was successful
       // Redirection is handled by the auth callback
     } catch (err) {
