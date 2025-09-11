@@ -1,49 +1,77 @@
-// src/middleware.ts (ou à la racine du projet si tu n'as pas de dossier src)
-import { NextRequest, NextResponse } from "next/server";
-import { createServerClient } from "@supabase/ssr";
+import { createServerClient } from '@supabase/ssr';
+import { NextResponse, type NextRequest } from 'next/server';
 
-export async function middleware(req: NextRequest) {
-  // Toujours créer une response avant toute modif de cookies
-  const res = NextResponse.next({ request: { headers: req.headers } });
+const protectedRoutes = ['/profile'];
+const authRoutes = ['/auth/login', '/auth/register'];
 
-  try {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+export async function middleware(request: NextRequest) {
+  let response = NextResponse.next();
 
-    // Si les env vars ne sont pas dispo en prod, ne crashe pas le middleware
-    if (!url || !key) {
-      console.warn("[middleware] Missing Supabase env vars; skipping auth refresh.");
-      return res;
-    }
-
-    const supabase = createServerClient(url, key, {
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
       cookies: {
-        get: (name: string) => req.cookies.get(name)?.value,
-        set: (name: string, value: string, options: any) => {
-          res.cookies.set(name, value, options);
-          return Promise.resolve();
+        get(name: string) {
+          return request.cookies.get(name)?.value;
         },
-        remove: (name: string, options: any) => {
-          res.cookies.set(name, "", { ...options, expires: new Date(0) });
-          return Promise.resolve();
+        set(name: string, value: string, options: any) {
+          response.cookies.set({
+            name,
+            value,
+            ...options,
+            sameSite: 'lax',
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            path: '/',
+          });
+        },
+        remove(name: string, options: any) {
+          response.cookies.set({
+            name,
+            value: '',
+            ...options,
+            maxAge: 0,
+            path: '/',
+          });
         },
       },
-    });
+    }
+  );
 
-    // Rafraîchit silencieusement la session si nécessaire
-    await supabase.auth.getSession();
+  // Refresh session if expired - required for Server Components
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  const isProtectedRoute = protectedRoutes.some(route => 
+    request.nextUrl.pathname.startsWith(route)
+  );
+  const isAuthRoute = authRoutes.includes(request.nextUrl.pathname);
 
-    return res;
-  } catch (e) {
-    // Ne jamais faire planter l'edge middleware (sinon 500)
-    console.error("[middleware] Error:", e);
-    return res;
+  // If user is not signed in and the current route is protected
+  if (!session && isProtectedRoute) {
+    const redirectUrl = new URL('/auth/login', request.url);
+    redirectUrl.searchParams.set('redirectedFrom', request.nextUrl.pathname);
+    return NextResponse.redirect(redirectUrl);
   }
+
+  // If user is signed in and the current route is an auth route
+  if (session && isAuthRoute) {
+    return NextResponse.redirect(new URL('/profile', request.url));
+  }
+
+  return response;
 }
 
-// Limite le middleware aux pages applicatives (pas les assets statiques)
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|robots.txt|sitemap.xml|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    /*
+     * Match all request paths except for the ones starting with:
+     * - _next/static (static files)
+     * - _next/image (image optimization files)
+     * - favicon.ico (favicon file)
+     * - api (API routes)
+     * - auth/callback (Supabase auth callback)
+     */
+    '/((?!_next/static|_next/image|favicon.ico|api|auth/callback|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

@@ -1,162 +1,274 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClientComponentClient } from '@supabase/auth-helpers-nextjs';
+import { updateProfile, updateAvatar, signOut } from './actions';
+import { AvatarUploader } from '@/components/AvatarUploader';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Switch } from '@/components/ui/switch';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { LogOut, Edit, Trash2 } from 'lucide-react';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { LogOut } from 'lucide-react';
 
-// Mock user data - replace with actual user data from your auth context
-const mockUser = {
-  displayName: 'Jean Dupont',
-  email: 'jean.dupont@example.com',
-  isPremium: false,
-  avatar: '',
-};
+interface ProfileData {
+  full_name: string;
+  username: string;
+  avatar_url?: string;
+}
 
 export default function ProfilePage() {
-  const [displayName, setDisplayName] = useState(mockUser.displayName);
-  const [isEditing, setIsEditing] = useState(false);
-  const [isPremium, setIsPremium] = useState(mockUser.isPremium);
   const router = useRouter();
+  const [loading, setLoading] = useState(true);
+  const [user, setUser] = useState<any>(null);
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [formData, setFormData] = useState({
+    full_name: '',
+    username: '',
+  });
+  const supabase = createClientComponentClient();
 
-  const handleLogout = () => {
-    // Implement logout logic here
-    console.log('Logging out...');
-    // router.push('/auth/login');
-  };
+  useEffect(() => {
+    let isMounted = true;
+    
+    async function loadUser() {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session) {
+          router.push('/auth/login');
+          return;
+        }
+        
+        if (isMounted) {
+          setUser(session.user);
+        }
+        
+        // Fetch profile data
+        const { data: profileData, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .single();
+          
+        if (error) throw error;
+        
+        if (isMounted) {
+          setProfile(profileData);
+          setFormData({
+            full_name: profileData?.full_name || '',
+            username: profileData?.username || ''
+          });
+        }
+      } catch (error) {
+        console.error('Error loading user:', error);
+        if (isMounted) {
+          toast.error('Failed to load user data');
+        }
+      } finally {
+        if (isMounted) {
+          setLoading(false);
+        }
+      }
+    }
 
-  const handleSaveName = () => {
-    // Implement name update logic here
-    console.log('Updating display name to:', displayName);
-    setIsEditing(false);
-  };
+    loadUser();
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [router, supabase]);
 
-  const handleDeleteAccount = () => {
-    // Implement account deletion logic here
-    if (confirm('Êtes-vous sûr de vouloir supprimer votre compte ? Cette action est irréversible.')) {
-      console.log('Deleting account...');
-      // router.push('/');
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const form = e.currentTarget;
+    const formData = new FormData(form);
+    const fullName = formData.get('full_name') as string;
+    const username = formData.get('username') as string;
+    
+    try {
+      // Update local state immediately for better UX
+      setProfile((prev) => ({
+        ...prev,
+        full_name: fullName,
+        username: username
+      }));
+      
+      const result = await updateProfile(formData);
+      
+      if (result && 'error' in result) {
+        throw new Error(result.error);
+      }
+      
+      toast.success('Profile updated successfully!');
+    } catch (error) {
+      // Revert local state on error
+      if (profile) {
+        setProfile((prev) => ({
+          ...prev,
+          full_name: profile.full_name,
+          username: profile.username
+        }));
+      }
+      
+      console.error('Error updating profile:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update profile';
+      toast.error(errorMessage);
     }
   };
 
-  const getInitials = (name: string) => {
-    return name
-      .split(' ')
-      .map((n) => n[0])
-      .join('')
-      .toUpperCase()
-      .substring(0, 2);
+  const handleSignOut = async () => {
+    try {
+      const result = await signOut();
+      
+      if (result && 'error' in result) {
+        throw new Error(result.error);
+      }
+      
+      // Clear any client-side state if needed
+      setUser(null);
+      setProfile(null);
+      
+      // Redirect to login page
+      router.push('/auth/login');
+      router.refresh();
+    } catch (error) {
+      console.error('Error signing out:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to sign out';
+      toast.error(errorMessage);
+    }
   };
 
-  return (
-    <div className="container mx-auto px-4 py-8 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-8">Mon Profil</h1>
+  const handleAvatarUpload = async (url: string): Promise<void> => {
+    try {
+      const result = await updateAvatar(url);
       
-      <div className="grid gap-6">
-        {/* Profile Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Profil</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center space-x-6">
-              <Avatar className="h-20 w-20">
-                <AvatarImage src={mockUser.avatar} alt={displayName} />
-                <AvatarFallback className="text-xl">
-                  {getInitials(displayName)}
-                </AvatarFallback>
-              </Avatar>
-              <div className="flex-1 space-y-2">
-                <div className="flex items-center space-x-2">
-                  {isEditing ? (
-                    <div className="flex items-center space-x-2 flex-1">
-                      <Input
-                        value={displayName}
-                        onChange={(e) => setDisplayName(e.target.value)}
-                        className="flex-1"
-                      />
-                      <Button size="sm" onClick={handleSaveName}>
-                        Enregistrer
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <h2 className="text-xl font-semibold">{displayName}</h2>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6"
-                        onClick={() => setIsEditing(true)}
-                      >
-                        <Edit className="h-3.5 w-3.5" />
-                        <span className="sr-only">Modifier le nom</span>
-                      </Button>
-                    </>
-                  )}
+      if (result && 'error' in result && result.error) {
+        throw new Error(typeof result.error === 'string' ? result.error : 'Failed to update avatar');
+      }
+      
+      setProfile((prev) => (prev ? { ...prev, avatar_url: url } : null));
+    } catch (error) {
+      console.error('Error updating avatar:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to update avatar';
+      toast.error(errorMessage);
+      throw error; // Re-throw to allow AvatarUploader to handle the error
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[60vh]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return null; // Will redirect in useEffect
+  }
+
+  return (
+    <div className="container py-8 max-w-4xl">
+      <div className="space-y-8">
+        <div className="space-y-1">
+          <h1 className="text-3xl font-bold tracking-tight">Profil</h1>
+          <p className="text-muted-foreground">
+            Gérez vos informations personnelles et vos paramètres de compte.
+          </p>
+        </div>
+
+        <div className="grid gap-6 md:grid-cols-2">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="pb-4">
+                <CardTitle className="text-lg">Photo de profil</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="flex flex-col items-center">
+                  <AvatarUploader 
+                    userId={user.id} 
+                    avatarUrl={profile?.avatar_url || null} 
+                    onUpload={handleAvatarUpload} 
+                  />
                 </div>
-                <p className="text-muted-foreground">{mockUser.email}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Subscription Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Abonnement</CardTitle>
-            <CardDescription>Gérez votre abonnement Premium</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="font-medium">Abonnement Premium</p>
-                <p className="text-sm text-muted-foreground">
-                  {isPremium ? 'Actif' : 'Inactif'}
-                </p>
-              </div>
-              <div className="flex items-center space-x-4">
-                <Switch
-                  checked={isPremium}
-                  onCheckedChange={setIsPremium}
-                  aria-label="Activer/désactiver Premium"
-                />
-                <Button variant="outline" onClick={() => router.push('/pricing')}>
-                  Gérer
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Sécurité</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Button 
+                  variant="outline" 
+                  onClick={handleSignOut}
+                  className="w-full"
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Se déconnecter
                 </Button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
+          </div>
 
-        {/* Security Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Sécurité</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <Button
-              variant="outline"
-              className="w-full justify-start"
-              onClick={handleLogout}
-            >
-              <LogOut className="mr-2 h-4 w-4" />
-              Se déconnecter
-            </Button>
-            
-            <Button
-              variant="ghost"
-              className="w-full justify-start text-destructive hover:text-destructive"
-              onClick={handleDeleteAccount}
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Supprimer mon compte
-            </Button>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg">Informations personnelles</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div>
+                  <Label htmlFor="email" className="block text-sm font-medium text-muted-foreground mb-1">
+                    Email
+                  </Label>
+                  <Input 
+                    id="email" 
+                    name="email" 
+                    type="email" 
+                    defaultValue={user?.email || ''} 
+                    disabled 
+                    className="bg-muted/50"
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="full_name" className="block text-sm font-medium text-muted-foreground mb-1">
+                    Nom complet
+                  </Label>
+                  <Input 
+                    id="full_name" 
+                    name="full_name" 
+                    defaultValue={profile?.full_name || ''} 
+                    placeholder="Votre nom"
+                    required
+                  />
+                </div>
+                
+                <div>
+                  <Label htmlFor="username" className="block text-sm font-medium text-muted-foreground mb-1">
+                    Nom d'utilisateur
+                  </Label>
+                  <Input 
+                    id="username" 
+                    name="username" 
+                    defaultValue={profile?.username || ''} 
+                    placeholder="Votre nom d'utilisateur"
+                    required
+                    minLength={3}
+                  />
+                </div>
+                
+                <div className="pt-2">
+                  <Button type="submit" className="w-full">
+                    Enregistrer les modifications
+                  </Button>
+                </div>
+              </form>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
