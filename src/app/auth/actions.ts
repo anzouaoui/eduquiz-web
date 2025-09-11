@@ -1,61 +1,39 @@
-"use server";
+'use server';
 
-import { revalidatePath } from "next/cache";
-import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { cookies } from 'next/headers';
+import { createServerActionClient } from '@supabase/auth-helpers-nextjs';
 
-export async function signUpWithEmail(formData: FormData) {
-  const email = String(formData.get("email") || "");
-  const password = String(formData.get("password") || "");
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signUp({
+export async function signInWithEmail(email: string, password: string) {
+  const supabase = createServerActionClient({ cookies });
+  
+  const { data, error } = await supabase.auth.signInWithPassword({
     email,
     password,
-    options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/auth/callback`,
-    },
   });
-  if (error) return { error: error.message };
-  revalidatePath("/");
-  return { ok: true };
+
+  if (error) {
+    throw error;
+  }
+
+  return data;
 }
 
-export async function signInWithEmail(formData: FormData) {
-  const email = String(formData.get("email") || "");
-  const password = String(formData.get("password") || "");
-  const supabase = await createClient();
-  const { error } = await supabase.auth.signInWithPassword({ email, password });
-  if (error) return { error: error.message };
-  revalidatePath("/");
-  redirect("/");
-}
+export async function signInWithOAuth(provider: 'google' | 'apple') {
+  const supabase = createServerActionClient({ cookies });
 
-export async function signInWithOAuth(provider: "google" | "apple") {
-  const supabase = await createClient();
+  const origin =
+    process.env.NEXT_PUBLIC_SITE_URL ??
+    (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : 'http://localhost:3000');
+
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider,
     options: {
-      redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/auth/callback`,
-      queryParams: provider === "google" ? { prompt: "select_account" } : undefined,
+      redirectTo: `${origin}/auth/callback`,
     },
   });
-  if (error) return { error: error.message };
-  redirect(data.url); // redirects to provider
-}
 
-export async function sendResetPassword(formData: FormData) {
-  const email = String(formData.get("email") || "");
-  const supabase = await createClient();
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: `${process.env.NEXT_PUBLIC_BASE_URL ?? ""}/auth/callback`,
-  });
-  if (error) return { error: error.message };
-  return { ok: true };
-}
+  if (error) throw error;
 
-export async function signOutAction() {
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-  revalidatePath("/");
-  redirect("/");
+  // Redirige explicitement si besoin (sinon le SDK le fait aussi)
+  return data?.url;
 }

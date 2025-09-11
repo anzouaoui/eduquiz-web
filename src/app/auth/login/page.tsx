@@ -23,19 +23,20 @@ export default function LoginPage() {
     setError('');
 
     const fd = new FormData(e.currentTarget);
+    const email = fd.get('email') as string;
+    const password = fd.get('password') as string;
 
-    if (!fd.get('email') || !fd.get('password')) {
+    if (!email || !password) {
       setError('Veuillez remplir tous les champs');
       return;
     }
 
     setIsLoading(true);
     try {
-      const result = await signInWithEmail(fd);
-      if (result?.error) {
-        throw new Error(result.error);
-      }
-      // Redirection gérée côté Server Action (ou via Supabase)
+      // signInWithEmail will throw an error if authentication fails
+      await signInWithEmail(email, password);
+      // If we get here, authentication was successful
+      // Redirection is handled by the auth callback
     } catch (err) {
       console.error('Login error:', err);
       setError(
