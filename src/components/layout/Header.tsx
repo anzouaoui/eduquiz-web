@@ -6,6 +6,7 @@ import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 import { Button } from "@/components/ui/button";
+import { UserButton } from "@/components/auth/UserButton";
 
 const NAV_LINKS = [
   { name: "Home", href: "/" },
@@ -59,19 +60,12 @@ export function Header() {
 
         <div className="flex items-center gap-4">
           <div className="hidden md:flex items-center gap-4">
-            <Link 
-              href="/login" 
-              className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-            >
-              Sign in
-            </Link>
-            <Button asChild variant="default" size="sm">
-              <Link href="/signup">
-                Get Started
-              </Link>
-            </Button>
+            <UserButton />
+            <ThemeToggle />
           </div>
-          <ThemeToggle />
+          <div className="md:hidden">
+            <ThemeToggle />
+          </div>
           <Button 
             variant="ghost" 
             size="icon" 
@@ -106,10 +100,17 @@ export function Header() {
           <div className="pt-4 border-t border-border/20">
             <Link
               href="/login"
-              className="block w-full rounded-md bg-muted/50 px-3 py-2 text-center text-base font-medium text-foreground hover:bg-muted/80"
+              className="block w-full rounded-md bg-muted/50 px-3 py-2 text-center text-base font-medium text-foreground hover:bg-muted/80 mb-2"
               onClick={() => setIsMenuOpen(false)}
             >
               Sign in
+            </Link>
+            <Link
+              href="/register"
+              className="block w-full rounded-md bg-primary px-3 py-2 text-center text-base font-medium text-primary-foreground hover:bg-primary/90"
+              onClick={() => setIsMenuOpen(false)}
+            >
+              Get Started
             </Link>
           </div>
         </div>
