@@ -3,12 +3,31 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { signOutAction } from '@/app/auth/actions';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { cn } from '@/lib/utils';
+import { useTransition } from 'react';
+import { toast } from 'sonner';
 
 export function Navbar() {
+  const [isPending, startTransition] = useTransition();
+  const router = useRouter();
   const pathname = usePathname();
   const isAuthPage = pathname.startsWith('/auth');
+
+  type SignOutResponse = { success: boolean } | { error: string };
+
+  const handleSignOut = async () => {
+    startTransition(async () => {
+      try {
+        await signOutAction();
+        router.push('/auth/login');
+        router.refresh();
+      } catch (error) {
+        toast.error('Erreur lors de la déconnexion');
+        console.error('Logout error:', error);
+      }
+    });
+  };
 
   if (isAuthPage) return null;
 
@@ -39,11 +58,14 @@ export function Navbar() {
             Quiz
           </Link>
           
-          <form action={signOutAction}>
-            <Button variant="ghost" size="sm">
-              Déconnexion
-            </Button>
-          </form>
+          <Button 
+            variant="ghost" 
+            size="sm" 
+            onClick={handleSignOut}
+            disabled={isPending}
+          >
+            {isPending ? 'Déconnexion...' : 'Déconnexion'}
+          </Button>
         </nav>
       </div>
     </header>

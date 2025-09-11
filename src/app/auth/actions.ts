@@ -72,9 +72,26 @@ export async function sendResetPassword(formData: FormData) {
 
 /** Déconnexion */
 export async function signOutAction() {
-  const cookieStore = cookies();
-  const supabase = createServerComponentClient({ cookies: () => cookieStore });
-  const { error } = await supabase.auth.signOut();
-  if (error) return { error: error.message };
-  redirect('/auth/login');
+  try {
+    const cookieStore = cookies();
+    const supabase = createServerComponentClient({ cookies: () => cookieStore });
+    const { error } = await supabase.auth.signOut();
+    
+    // Supprimer tous les cookies liés à l'authentification
+    cookieStore.getAll().forEach(cookie => {
+      if (cookie.name.startsWith('sb-') || cookie.name === 'sb-auth-token') {
+        cookieStore.delete(cookie.name);
+      }
+    });
+    
+    if (error) {
+      console.error('Supabase sign out error:', error);
+      return { error: error.message };
+    }
+    
+    return { success: true };
+  } catch (error) {
+    console.error('Sign out error:', error);
+    return { error: 'Une erreur est survenue lors de la déconnexion' };
+  }
 }
