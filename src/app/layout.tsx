@@ -88,7 +88,10 @@ export default function RootLayout({
         <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
         <meta name="theme-color" content="#0A0A0B" media="(prefers-color-scheme: dark)" />
       </head>
-      <body className={`${inter.variable} ${sora.variable} font-sans antialiased min-h-screen bg-background text-foreground`}>
+      <body
+        suppressHydrationWarning
+        className={`${inter.variable} ${sora.variable} font-sans antialiased min-h-screen bg-background text-foreground`}
+      >
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
           <Providers>
             <div className="flex flex-col min-h-screen">
