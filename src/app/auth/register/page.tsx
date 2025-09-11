@@ -3,11 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { signUpWithEmail, signInWithOAuth } from './actions';
+import { signUpWithEmail } from './actions';
+import { OAuthButtons } from '@/components/auth/OAuthButtons';
 import { Loader2 } from 'lucide-react';
 
 export default function RegisterPage() {
@@ -64,11 +64,22 @@ export default function RegisterPage() {
           </div>
         )}
 
+        <OAuthButtons />
+
+        <div className="relative my-6">
+          <div className="absolute inset-0 flex items-center">
+            <div className="w-full border-t border-gray-300" />
+          </div>
+          <div className="relative flex justify-center text-sm">
+            <span className="px-2 bg-white text-gray-500">Ou créez un compte avec un email</span>
+          </div>
+        </div>
+
         <form action={handleSubmit} className="space-y-6">
           <div className="space-y-4">
             <div>
               <Label htmlFor="display_name" className="block text-sm font-medium text-gray-700">
-                Nom d'utilisateur (optionnel)
+                Pseudo
               </Label>
               <Input
                 id="display_name"
