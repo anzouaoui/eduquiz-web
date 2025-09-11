@@ -18,6 +18,9 @@ interface ProfileData {
   avatar_url?: string;
 }
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default function ProfilePage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
